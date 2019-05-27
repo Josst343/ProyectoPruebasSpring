@@ -1,0 +1,41 @@
+image: gradle:alpine
+stages: 
+  - build
+  - test
+  - deploy
+  
+construccion:
+   stage: build 
+   script:
+   - gradle build -x test
+   allow_failure: false
+   artifacts:
+    expire_in: 1 week
+    paths:
+      - build/libs/SistemaGuarderia-0.0.1.jar
+      
+testeo:
+   stage: test
+   script:
+   - gradle test
+
+despliegue_en_heroku:
+  image: java:8-jdk
+  stage: deploy
+  script:
+    # I need to control which Git branch I'm on in order to push to Heroku
+    - git config user.email "luisdavduacm@gmail.com"
+    - git config user.name "luisdavid"
+    - git checkout -b publish-to-heroku
+    - git commit --allow-empty -m "Test pushing to Heroku at $(date)"
+    - git branch -v
+    - git push --force https://heroku:$HEROKU_API_KEY@git.heroku.com/guarderia.git publish-to-heroku:master
+  dependencies:
+    - testeo
+        #heroku_deploy:
+        #stage: deploy
+        #script:
+        #- apt update -qq
+        #- apt install -qq -y ruby
+        #  - gem install -q dpl
+        #- dpl --provider=heroku --app=$APP_NAME --api-key=$HEROKU_API_KEY
